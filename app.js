@@ -12,6 +12,11 @@
   var S = D.sostenibilidad || {};
   var M = D.matriculaciones || {};
   var R = D.recarga || null;
+  var CL = D.clima_largo || {};
+  var MAR = D.mar || {};
+  var NM = D.nivel_mar || {};
+  var CO2 = D.co2 || { x: [], v: [] };
+  var EL = D.electricidad || {};
 
   var ult = function (a) {
     if (!a) return null;
@@ -27,6 +32,51 @@
   var fPct = function (v, d) { return F.pct(v, d == null ? 1 : d); };
   var fSigno = function (v) { return v == null ? '—' : F.signo(v, 1) + ' %'; };
   var fT = function (v) { return F.num(v, 0) + ' t'; };
+  var fFecha = function (iso) { return iso ? iso.split('-').reverse().join('/') : ''; };
+  /* Media de una serie anual entre dos años (incluidos), sobre los años con dato */
+  var mediaAnios = function (o, k, a0, a1) {
+    var v = (o.x || []).map(function (x, i) { return (+x >= a0 && +x <= a1) ? o[k][i] : null; }).filter(function (x) { return x != null; });
+    return v.length ? v.reduce(function (p, c) { return p + c; }, 0) / v.length : null;
+  };
+  var anioMax = function (o, k) {
+    var i = -1, m = -Infinity;
+    (o[k] || []).forEach(function (v, j) { if (v != null && v > m) { m = v; i = j; } });
+    return i < 0 ? null : o.x[i];
+  };
+  /* Media móvil de los n últimos valores (exige el 80 % con dato) */
+  var movil = function (a, n) {
+    return (a || []).map(function (_, i) {
+      if (i < n - 1) return null;
+      var v = a.slice(i - n + 1, i + 1).filter(function (x) { return x != null; });
+      return v.length >= n * 0.8 ? +(v.reduce(function (p, c) { return p + c; }, 0) / v.length).toFixed(2) : null;
+    });
+  };
+  /* Franjas de calentamiento (Ed Hawkins): una franja por año, de azul (más frío
+     que 1961-1990) a rojo (más cálido). Lectura de un vistazo; las cifras exactas
+     están en la tarjeta de anomalía anual. */
+  var franjas = function (a) {
+    if (!a.x || !a.x.length) return '';
+    var x0 = +a.x[0], x1 = +a.x[a.x.length - 1], n = x1 - x0 + 1, w = 10;
+    var porAnio = {}; a.x.forEach(function (x, i) { porAnio[x] = a.anomalia[i]; });
+    var color = function (v) {
+      if (v == null) return 'var(--surface-sunk)';
+      var t = Math.max(-1, Math.min(1, v / 2));          /* ±2 °C satura el color */
+      var azul = [33, 102, 172], rojo = [178, 24, 43], blanco = [247, 247, 247];
+      var c = t < 0 ? azul : rojo, k = Math.abs(t);
+      return 'rgb(' + blanco.map(function (b, j) { return Math.round(b + (c[j] - b) * k); }).join(',') + ')';
+    };
+    var rects = '';
+    for (var y = x0; y <= x1; y++) {
+      var v = porAnio[String(y)];
+      rects += '<rect x="' + (y - x0) * w + '" y="0" width="' + w + '" height="60" fill="' + color(v) + '"><title>' + y + ': ' +
+        (v == null ? 'sin dato' : F.signo(v, 2) + ' °C') + '</title></rect>';
+    }
+    return '<div class="pmcc-franjas"><div class="t">Franjas de calentamiento de Málaga, ' + x0 + '-' + x1 + '</div>' +
+      '<div class="s">Cada franja es un año: azul, más frío que la media de 1961-1990; rojo, más cálido. Pasa el ratón para ver la cifra.</div>' +
+      '<svg viewBox="0 0 ' + n * w + ' 60" preserveAspectRatio="none" role="img" aria-label="Franjas de calentamiento de Málaga">' + rects + '</svg>' +
+      '<div class="e"><span>' + x0 + '</span><span>' + x1 + '</span></div>' +
+      '<div class="f">Fuente: <a href="' + F_GHCN.url + '" target="_blank" rel="noopener">' + esc(F_GHCN.txt) + '</a></div></div>';
+  };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
   /* --------------------------------------------------------------- Fuentes */
@@ -37,6 +87,12 @@
   var F_AEMET = { txt: 'AEMET OpenData · estación 6083X Marbella, vía Observatorio de sostenibilidad', url: 'https://ammaconsulting.github.io/observatorio-sostenibilidad-marbella/' };
   var F_PLAN = { txt: 'Borrador del PMCC de Marbella (v00, nov. 2025), tabla 41 · marco: Ley 8/2018 de Andalucía', url: 'https://www.boe.es/buscar/act.php?id=BOE-A-2018-15238' };
   var F_SAT = { txt: 'Copernicus (Sentinel-2, Sentinel-3/Landsat, Sentinel-5P), vía Observatorio de sostenibilidad', url: 'https://ammaconsulting.github.io/observatorio-sostenibilidad-marbella/' };
+
+  var F_GHCN = { txt: 'NOAA GHCN-Daily · Málaga Aeropuerto (OMM 08482)', url: 'https://www.ncei.noaa.gov/products/land-based-station/global-historical-climatology-network-daily' };
+  var F_SST = { txt: 'NOAA OISST v2.1 · celda frente a Marbella', url: 'https://www.ncei.noaa.gov/products/optimum-interpolation-sst' };
+  var F_PSMSL = { txt: 'PSMSL · mareógrafo de Málaga (estación 1810)', url: 'https://psmsl.org/data/obtaining/stations/1810.php' };
+  var F_REE = { txt: 'Red Eléctrica · REData, sistema eléctrico andaluz', url: 'https://www.ree.es/es/datos/generacion/estructura-generacion' };
+  var F_CO2 = { txt: 'NOAA Global Monitoring Laboratory · Mauna Loa', url: 'https://gml.noaa.gov/ccgg/trends/' };
 
   var CH_ANUAL = { txt: 'Anual' };
   var CH_MES = { txt: 'Mensual', tipo: 'live' };
@@ -68,6 +124,271 @@
 
   /* ---------------------------------------------------------- Secciones */
   var SECCIONES = [
+
+    /* ------------------------------------------------------- Resumen --- */
+    {
+      id: 'resumen', nombre: 'Resumen',
+      titulo: 'Cómo está cambiando el clima en Marbella',
+      desc: 'Las series más largas disponibles para la Costa del Sol, comparadas con el clima de referencia 1961-1990. ' +
+        'La temperatura y la lluvia son de la estación de Málaga Aeropuerto (desde 1942, a unos 50 km), la única con una serie larga y continua; el mar se mide frente a la costa de Marbella.',
+      render: function () {
+        var a = CL.anual || { x: [] };
+        var dec = mediaAnios(a, 'anomalia', 2016, 2025);
+        var mA = (MAR.anual || {});
+        var kpis = [
+          { label: 'Noches tropicales en ' + ult(a.x) + ' (media 1961-1990: ' + F.num(a.noches20_normal, 0) + ')', valor: ult(a.noches20), serie: (a.noches20 || []).slice(-30) },
+          { label: 'Días de 30 °C o más en ' + ult(a.x) + ' (media 1961-1990: ' + F.num(a.dias30_normal, 0) + ')', valor: ult(a.dias30), serie: (a.dias30 || []).slice(-30) },
+          NM.mm_anio != null ? { label: 'Subida del nivel del mar en Málaga (' + NM.desde + '-' + NM.hasta + ')', valor: NM.mm_anio, unidad: 'mm/año', formato: function (v) { return F.num(v, 1); } } : null,
+          MAR.ultima_anomalia != null ? { label: 'Mar frente a Marbella el ' + fFecha(MAR.ultimo_dia) + ', frente a lo normal', valor: MAR.ultima_anomalia, unidad: '°C', formato: function (v) { return F.signo(v, 1); } } : null
+        ].filter(Boolean);
+        return {
+          hero: {
+            valor: dec, label: 'Más cálida la última década (2016-2025) que el clima de referencia 1961-1990, en temperatura media anual',
+            formato: function (v) { return F.signo(v, 2) + ' °C'; },
+            extra: [
+              { label: 'Año más cálido de la serie', valor: anioMax(a, 'media'), formato: function (v) { return v; } },
+              { label: 'Noches tropicales al año (2016-2025)', valor: mediaAnios(a, 'noches20', 2016, 2025), formato: function (v) { return F.num(v, 0) + ' (antes ' + F.num(a.noches20_normal, 0) + ')'; } },
+              { label: 'CO₂ en la atmósfera, ' + Obs.periodo(ult(CO2.x), 'mes'), valor: ult(CO2.v), formato: function (v) { return F.num(v, 1) + ' ppm'; } }
+            ]
+          },
+          kpis: kpis,
+          cards: [
+            {
+              titulo: 'Temperatura media anual en Málaga desde 1943', sub: '°C. La línea discontinua es la media de 1961-1990',
+              chips: [CH_DIA], fuente: F_GHCN, ancho: 'full',
+              nota: 'Años con menos de 330 días medidos, sin dato (1942 y 1946). La media de 10 años suaviza la variación de un año a otro.',
+              spec: {
+                type: 'line', xType: 'anual', x: a.x, zoom: false, yFormat: 'dec1',
+                series: [{ name: 'Media anual', data: a.media }, { name: 'Media de 10 años', data: movil(a.media, 10) }],
+                ref: a.normal, refLabel: 'Media 1961-1990: ' + F.num(a.normal, 1) + ' °C'
+              }
+            },
+            {
+              titulo: 'Noches tropicales por año', sub: 'Noches con mínima de 20 °C o más',
+              chips: [CH_DIA], fuente: F_GHCN,
+              spec: { type: 'bar', xType: 'anual', x: a.x, zoom: false, yFormat: 'num', series: [{ name: 'Noches tropicales', data: a.noches20 }], ref: a.noches20_normal, refLabel: 'Media 1961-1990' }
+            },
+            {
+              titulo: 'Días de calor por año', sub: 'Días con máxima de 30 °C o más',
+              chips: [CH_DIA], fuente: F_GHCN,
+              spec: { type: 'bar', xType: 'anual', x: a.x, zoom: false, yFormat: 'num', series: [{ name: 'Días ≥ 30 °C', data: a.dias30 }], ref: a.dias30_normal, refLabel: 'Media 1961-1990' }
+            }
+          ],
+          extra: franjas(a)
+        };
+      }
+    },
+
+    /* --------------------------------------------------- Temperatura --- */
+    {
+      id: 'temperatura', nombre: 'Temperatura',
+      titulo: 'Temperatura: medias, calor extremo y noches',
+      desc: 'Indicadores de calor que el plan identifica entre los riesgos más graves (temperaturas extremas, salud, turismo). ' +
+        'Serie diaria de Málaga Aeropuerto desde 1942 (NOAA GHCN-Daily), comparada con la media de 1961-1990, y la estación de AEMET en Marbella para los últimos años.',
+      render: function () {
+        var a = CL.anual || { x: [] }, m = CL.mensual || { x: [] };
+        var desde = Math.max(0, (m.x || []).indexOf('1990-01'));
+        var lx = ultX(C.x, C.media);
+        return {
+          kpis: [
+            { label: 'Anomalía de temperatura, ' + Obs.periodo(ultX(m.x, m.anomalia), 'mes') + ' (Málaga)', valor: ult(m.anomalia), unidad: '°C', formato: function (v) { return F.signo(v, 1); } },
+            { label: 'Días de 35 °C o más en ' + ult(a.x) + ' (media 1961-1990: ' + F.num(a.dias35_normal, 0) + ')', valor: ult(a.dias35) },
+            { label: 'Noches de 25 °C o más en ' + ult(a.x) + ' (media 1961-1990: ' + F.num(a.noches25_normal, 1) + ')', valor: ult(a.noches25) },
+            { label: 'Temperatura media en Marbella, ' + Obs.periodo(lx, 'mes'), valor: ult(C.media), unidad: '°C', formato: function (v) { return F.num(v, 1); } }
+          ],
+          cards: [
+            {
+              titulo: 'Anomalía de temperatura de cada año', sub: '°C respecto a la media de 1961-1990 (por encima de 0, más cálido)',
+              chips: [CH_DIA], fuente: F_GHCN, ancho: 'full',
+              spec: { type: 'line', xType: 'anual', x: a.x, zoom: false, yFormat: 'dec1', series: [{ name: 'Anomalía', data: a.anomalia }], ref: 0, refLabel: 'Media 1961-1990' }
+            },
+            {
+              titulo: 'Anomalía de temperatura de cada mes', sub: '°C respecto a la media de ese mes en 1961-1990, desde 1990',
+              chips: [CH_DIA], fuente: F_GHCN, ancho: 'full',
+              spec: { type: 'line', xType: 'mes', x: (m.x || []).slice(desde), yFormat: 'dec1', zoomDesde: 70, series: [{ name: 'Anomalía', data: (m.anomalia || []).slice(desde) }], ref: 0, refLabel: 'Media del mes' }
+            },
+            {
+              titulo: 'Días de calor intenso por año', sub: 'Días con máxima de 35 °C o más',
+              chips: [CH_DIA], fuente: F_GHCN,
+              spec: { type: 'bar', xType: 'anual', x: a.x, zoom: false, yFormat: 'num', series: [{ name: 'Días ≥ 35 °C', data: a.dias35 }], ref: a.dias35_normal, refLabel: 'Media 1961-1990' }
+            },
+            {
+              titulo: 'Noches tórridas por año', sub: 'Noches con mínima de 25 °C o más',
+              chips: [CH_DIA], fuente: F_GHCN,
+              spec: { type: 'bar', xType: 'anual', x: a.x, zoom: false, yFormat: 'num', series: [{ name: 'Noches ≥ 25 °C', data: a.noches25 }] }
+            },
+            {
+              titulo: 'Temperatura máxima absoluta de cada año', sub: '°C',
+              chips: [CH_DIA], fuente: F_GHCN,
+              spec: { type: 'line', xType: 'anual', x: a.x, zoom: false, yFormat: 'dec1', series: [{ name: 'Máxima del año', data: a.maxima_abs }] }
+            },
+            {
+              titulo: 'Temperatura mensual en Marbella', sub: 'Estación de AEMET 6083X: media, media de máximas y de mínimas (°C)',
+              chips: [CH_MES], fuente: F_AEMET,
+              nota: 'Serie corta (desde 2017) y con meses sin dato: sirve para seguir el año en curso, no la tendencia.',
+              spec: {
+                type: 'line', xType: 'mes', x: C.x, yFormat: 'dec1',
+                series: [{ name: 'Máxima media', data: C.maxima }, { name: 'Media', data: C.media }, { name: 'Mínima media', data: C.minima }]
+              }
+            }
+          ]
+        };
+      }
+    },
+
+    /* ------------------------------------------------ Lluvia y sequía --- */
+    {
+      id: 'lluvia', nombre: 'Lluvia y sequía',
+      titulo: 'Lluvia, sequía y lluvias torrenciales',
+      desc: 'Sequía e inundaciones por lluvias torrenciales son dos de los impactos que el plan prioriza. ' +
+        'Precipitación diaria de Málaga Aeropuerto desde 1942, por año hidrológico (octubre-septiembre), comparada con 1961-1990.',
+      render: function () {
+        var l = CL.lluvia || { x: [] }, s = CL.sequia || { x: [] };
+        var desde = Math.max(0, (s.x || []).indexOf('1990-01'));
+        return {
+          hero: {
+            valor: ult(s.pct), label: 'Lluvia de los últimos 12 meses (hasta ' + Obs.periodo(ult(s.x), 'mes') + ') respecto a lo normal de 1961-1990',
+            formato: function (v) { return F.num(v, 0) + ' %'; },
+            extra: [
+              { label: 'Lluvia normal en 12 meses', valor: s.normal_mm, formato: function (v) { return F.num(v, 0) + ' mm'; } },
+              { label: 'Último año hidrológico completo (' + ult(l.x) + ')', valor: ult(l.total), formato: function (v) { return F.num(v, 0) + ' mm'; } }
+            ]
+          },
+          cards: [
+            {
+              titulo: 'Sequía: lluvia de los últimos 12 meses', sub: '% sobre lo normal de 1961-1990, desde 1990 (por debajo de 100, más seco de lo normal)',
+              chips: [CH_DIA], fuente: F_GHCN, ancho: 'full',
+              spec: { type: 'line', xType: 'mes', x: (s.x || []).slice(desde), yFormat: 'num', desdeCero: true, series: [{ name: '% de lo normal', data: (s.pct || []).slice(desde) }], ref: 100, refLabel: 'Lo normal' }
+            },
+            {
+              titulo: 'Lluvia por año hidrológico', sub: 'mm de octubre a septiembre',
+              chips: [CH_DIA], fuente: F_GHCN, ancho: 'full',
+              spec: { type: 'bar', xType: 'cat', x: l.x, zoom: false, yFormat: 'num', series: [{ name: 'Lluvia', data: l.total }], ref: l.normal, refLabel: 'Media 1961-1990: ' + F.num(l.normal, 0) + ' mm' }
+            },
+            {
+              titulo: 'Días de lluvia torrencial por año', sub: 'Días con 30 mm o más',
+              chips: [CH_DIA], fuente: F_GHCN,
+              spec: { type: 'bar', xType: 'cat', x: l.x, zoom: false, yFormat: 'num', series: [{ name: 'Días ≥ 30 mm', data: l.dias30 }], ref: l.dias30_normal, refLabel: 'Media 1961-1990' }
+            },
+            {
+              titulo: 'Lluvia máxima en un día', sub: 'mm, el día más lluvioso de cada año hidrológico',
+              chips: [CH_DIA], fuente: F_GHCN,
+              spec: { type: 'bar', xType: 'cat', x: l.x, zoom: false, yFormat: 'num', series: [{ name: 'Máximo diario', data: l.max_diaria }] }
+            }
+          ]
+        };
+      }
+    },
+
+    /* ------------------------------------------------------------ Mar --- */
+    {
+      id: 'mar', nombre: 'Mar',
+      titulo: 'El mar: temperatura, olas de calor marinas y nivel',
+      desc: 'Temperatura superficial del mar frente a Marbella (NOAA OISST, satélite y boyas, desde 1982) comparada con 1982-2011, y nivel medio del mar en el mareógrafo de Málaga (PSMSL). ' +
+        'Una ola de calor marina son al menos cinco días seguidos por encima del 90 % de los valores habituales de esa fecha (criterio de Hobday et al., 2016). ' +
+        'Afectan a la pesca, a la proliferación de algas y medusas y al balance sedimentario de las playas (actuación A-05).',
+      render: function () {
+        var cards = [];
+        var kpis = [];
+        var hero = null;
+        if (MAR.anual) {
+          var ma = MAR.anual, mm = MAR.mensual, r = MAR.reciente;
+          hero = {
+            valor: MAR.ultimo_valor, label: 'Temperatura del mar frente a Marbella el ' + fFecha(MAR.ultimo_dia),
+            formato: function (v) { return F.num(v, 1) + ' °C'; },
+            extra: [
+              { label: 'Frente a lo normal de esa fecha', valor: MAR.ultima_anomalia, formato: function (v) { return F.signo(v, 1) + ' °C'; } },
+              { label: 'Días en ola de calor marina en ' + MAR.ultimo_dia.slice(0, 4), valor: ma.dias_ola_en_curso, formato: F.num },
+              { label: 'Media 1982-1991 frente a 2016-2025', valor: (mediaAnios(ma, 'media', 2016, 2025) - mediaAnios(ma, 'media', 1982, 1991)), formato: function (v) { return F.signo(v, 2) + ' °C'; } }
+            ]
+          };
+          cards.push(
+            {
+              titulo: 'Temperatura del mar en los últimos 120 días', sub: '°C, frente a la media y al umbral de ola de calor de cada fecha (1982-2011)',
+              chips: [CH_DIA], fuente: F_SST, ancho: 'full',
+              spec: { type: 'line', xType: 'cat', x: r.x, yFormat: 'dec1', zoom: false,
+                      series: [{ name: 'Temperatura del mar', data: r.sst }, { name: 'Umbral de ola de calor (p90)', data: r.p90 }, { name: 'Media 1982-2011', data: r.clima }] }
+            },
+            {
+              titulo: 'Temperatura media del mar por año', sub: '°C frente a Marbella',
+              chips: [CH_DIA], fuente: F_SST,
+              spec: { type: 'line', xType: 'anual', x: ma.x, zoom: false, yFormat: 'dec1', series: [{ name: 'Media anual', data: ma.media }, { name: 'Media de 10 años', data: movil(ma.media, 10) }] }
+            },
+            {
+              titulo: 'Días de ola de calor marina por año', sub: 'Días dentro de una ola de calor marina',
+              chips: [CH_DIA], fuente: F_SST,
+              spec: { type: 'bar', xType: 'anual', x: ma.x, zoom: false, yFormat: 'num', series: [{ name: 'Días', data: ma.dias_ola }] }
+            },
+            {
+              titulo: 'Anomalía mensual de la temperatura del mar', sub: '°C respecto a la media de esa fecha en 1982-2011',
+              chips: [CH_DIA], fuente: F_SST, ancho: 'full',
+              spec: { type: 'line', xType: 'mes', x: mm.x, yFormat: 'dec1', zoomDesde: 60, series: [{ name: 'Anomalía', data: mm.anomalia }], ref: 0, refLabel: 'Media 1982-2011' }
+            }
+          );
+        }
+        if (NM.x) {
+          kpis.push({ label: 'Nivel medio del mar en Málaga, ' + NM.hasta, valor: ult(NM.v), unidad: 'mm', formato: F.num });
+          kpis.push({ label: 'Tendencia ' + NM.desde + '-' + NM.hasta, valor: NM.mm_anio, unidad: 'mm/año', formato: function (v) { return F.num(v, 1); } });
+          cards.push({
+            titulo: 'Nivel medio del mar en Málaga', sub: 'mm (referencia local del mareógrafo, RLR) y tendencia lineal',
+            chips: [CH_ANUAL], fuente: F_PSMSL, ancho: 'full',
+            nota: 'Los años sin dato (1996, 2001, 2021) no tienen cobertura suficiente en el mareógrafo. La cifra en mm es relativa a la referencia del mareógrafo: lo que importa es su evolución.',
+            spec: { type: 'line', xType: 'anual', x: NM.x, yFormat: 'num', series: [{ name: 'Nivel medio anual', data: NM.v }, { name: 'Tendencia', data: NM.tendencia }] }
+          });
+        }
+        return { hero: hero, kpis: kpis, cards: cards,
+                 nota: MAR.anual ? null : 'La temperatura del mar frente a Marbella (diaria desde 1982) se está cargando por primera vez: el servidor de NOAA tarda varios minutos por año. Aparecerá aquí en cuanto esté completa.' };
+      }
+    },
+
+    /* -------------------------------------------------------- Energía --- */
+    {
+      id: 'energia', nombre: 'Energía',
+      titulo: 'Electricidad renovable en Andalucía',
+      desc: 'Contexto del objetivo 2 del plan (42 % de renovables en 2030): cómo se genera la electricidad en el sistema eléctrico andaluz, del que se abastece Marbella. ' +
+        'Es generación regional, no el consumo del municipio. Datos mensuales de Red Eléctrica.',
+      render: function () {
+        var e = EL.x ? EL : null;
+        if (!e) return { nota: 'Los datos de Red Eléctrica no están disponibles ahora mismo.' };
+        var lx = ult(e.x);
+        return {
+          hero: {
+            valor: ult(e.anual.renovable_pct), label: 'Electricidad generada con renovables en Andalucía en ' + ult(e.anual.x),
+            formato: fPct,
+            extra: [
+              { label: 'En ' + e.anual.x[0], valor: e.anual.renovable_pct[0], formato: fPct },
+              { label: 'Último mes (' + Obs.periodo(lx, 'mes') + ')', valor: ult(e.renovable_pct), formato: fPct }
+            ]
+          },
+          cards: [
+            {
+              titulo: 'Peso de las renovables en la generación', sub: '% mensual en Andalucía',
+              chips: [CH_MES], fuente: F_REE, ancho: 'full',
+              spec: { type: 'line', xType: 'mes', x: e.x, yFormat: 'pct', desdeCero: true, series: [{ name: 'Renovables', data: e.renovable_pct }, { name: 'Media de 12 meses', data: movil(e.renovable_pct, 12) }] }
+            },
+            {
+              titulo: 'Generación por tecnología', sub: 'GWh al mes en Andalucía',
+              chips: [CH_MES], fuente: F_REE, ancho: 'full',
+              nota: '«Resto»: hidráulica, otras renovables, residuos y otras no renovables.',
+              spec: {
+                type: 'stack', xType: 'mes', x: e.x, yFormat: 'num',
+                series: ['Solar fotovoltaica', 'Eólica', 'Solar térmica', 'Ciclo combinado (gas)', 'Cogeneración', 'Carbón', 'Resto'].map(function (k) { return { name: k, data: e.series[k] }; })
+              }
+            },
+            {
+              titulo: 'Renovables por año', sub: '% de la generación anual en Andalucía',
+              chips: [CH_ANUAL], fuente: F_REE,
+              spec: { type: 'bar', xType: 'anual', x: e.anual.x, yFormat: 'pct', series: [{ name: 'Renovables', data: e.anual.renovable_pct }] }
+            },
+            {
+              titulo: 'CO₂ en la atmósfera', sub: 'ppm, media mensual en Mauna Loa (referencia mundial)',
+              chips: [CH_MES], fuente: F_CO2,
+              spec: { type: 'line', xType: 'mes', x: CO2.x, yFormat: 'num', series: [{ name: 'CO₂', data: CO2.v }] }
+            }
+          ]
+        };
+      }
+    },
 
     /* ------------------------------------------------------- Objetivos -- */
     {
@@ -286,50 +607,6 @@
       }
     },
 
-    /* ---------------------------------------------------------- Clima --- */
-    {
-      id: 'clima', nombre: 'Clima',
-      titulo: 'Temperaturas y precipitación',
-      desc: 'El riesgo de temperaturas extremas es uno de los que más pesa en el análisis del plan (actuación A-03, sombra en espacios públicos). ' +
-        'Datos mensuales de la estación de AEMET en Marbella (6083X). La anomalía compara cada mes con la media de ese mismo mes en la serie disponible desde 2017, que es corta: sirve para ver meses anómalos, no para medir una tendencia climática.',
-      render: function () {
-        var lx = ultX(C.x, C.media);
-        return {
-          kpis: [
-            { label: 'Temperatura media, ' + Obs.periodo(lx, 'mes'), valor: ult(C.media), unidad: '°C', formato: function (v) { return F.num(v, 1); }, serie: (C.media || []).slice(-24) },
-            { label: 'Anomalía frente a su mes', valor: ult(anomalia), unidad: '°C', formato: function (v) { return F.signo(v, 1); } },
-            { label: 'Máxima media del mes', valor: ult(C.maxima), unidad: '°C', formato: function (v) { return F.num(v, 1); } },
-            { label: 'Precipitación del mes', valor: ultX(C.x, C.precipitacion) === lx ? ult(C.precipitacion) : null, unidad: 'mm', formato: function (v) { return F.num(v, 1); } }
-          ],
-          cards: [
-            {
-              titulo: 'Temperatura mensual', sub: 'Media, media de las máximas y media de las mínimas (°C)',
-              chips: [CH_MES], fuente: F_AEMET, ancho: 'full',
-              nota: 'Los meses sin dato de la estación quedan en blanco.',
-              spec: {
-                type: 'line', xType: 'mes', x: C.x, yFormat: 'dec1',
-                series: [
-                  { name: 'Máxima media', data: C.maxima },
-                  { name: 'Media', data: C.media },
-                  { name: 'Mínima media', data: C.minima }
-                ]
-              }
-            },
-            {
-              titulo: 'Anomalía de temperatura', sub: '°C respecto a la media del mismo mes (por encima de 0, más cálido)',
-              chips: [CH_MES], fuente: F_AEMET,
-              spec: { type: 'line', xType: 'mes', x: C.x, yFormat: 'dec1', series: [{ name: 'Anomalía', data: anomalia }], ref: 0, refLabel: 'Media del mes' }
-            },
-            {
-              titulo: 'Precipitación mensual', sub: 'mm',
-              chips: [CH_MES], fuente: F_AEMET,
-              spec: { type: 'bar', xType: 'mes', x: C.x, yFormat: 'num', series: [{ name: 'Precipitación', data: C.precipitacion }] }
-            }
-          ]
-        };
-      }
-    },
-
     /* ------------------------------------------------------ Territorio -- */
     {
       id: 'territorio', nombre: 'Territorio',
@@ -400,11 +677,12 @@
   /* ----------------------------------------------------------- Arranque -- */
   Obs.init({
     titulo: 'Observatorio del Plan Municipal contra el Cambio Climático · Marbella',
-    subtitulo: 'Objetivos 2030, movilidad, agua, clima y territorio, con fuentes oficiales que se actualizan solas',
+    subtitulo: 'Cómo cambia el clima de Marbella y cómo avanza su plan, con fuentes oficiales que se actualizan solas',
     secciones: SECCIONES,
     actualizado: (D.meta || {}).actualizado,
-    fuentes: [F_HCM, F_DGT, F_NAP, F_HID, F_AEMET, F_SAT],
-    metodologia: 'Un proceso automático (<code>pipeline/build_data.py</code>) se ejecuta cada día en GitHub Actions: descarga las matriculaciones de la DGT y los puntos de recarga del Punto de Acceso Nacional, ' +
+    fuentes: [F_GHCN, F_SST, F_PSMSL, F_REE, F_CO2, F_HCM, F_DGT, F_NAP, F_HID, F_AEMET, F_SAT],
+    metodologia: 'Un proceso automático (<code>pipeline/build_data.py</code>) se ejecuta cada día en GitHub Actions. Descarga la serie diaria de Málaga Aeropuerto desde 1942 (NOAA GHCN-Daily), la temperatura del mar frente a Marbella (NOAA OISST), el nivel del mar del mareógrafo de Málaga (PSMSL), la generación eléctrica andaluza (Red Eléctrica) y el CO₂ de Mauna Loa (NOAA); ' +
+      'el clima de referencia es 1961-1990 (1982-2011 en el mar, cuya serie empieza en 1982). También descarga las matriculaciones de la DGT y los puntos de recarga del Punto de Acceso Nacional, ' +
       'y lee los datos que publican los observatorios hídrico y de sostenibilidad de AMMA (REDIAM, Red Hidrosur, AEMET y Copernicus). ' +
       'La línea base de emisiones y energía está transcrita de los anexos del borrador del PMCC (herramienta HCM de la Junta de Andalucía) y se actualizará cuando la Junta publique años nuevos. ' +
       'Cada tarjeta enlaza a su fuente y permite ver los datos en tabla y descargarlos en CSV.',

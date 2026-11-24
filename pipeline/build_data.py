@@ -19,7 +19,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from sources import dgt, observatorios, plan              # noqa: E402
+from sources import clima_largo, dgt, energia, mar, observatorios, plan  # noqa: E402
 from sources.comun import escribir_js, paso, ok, aviso     # noqa: E402
 
 MUNICIPIO = "Marbella"
@@ -81,6 +81,27 @@ def recoger(previo):
     if bloque("matriculaciones", lambda: dgt.matriculaciones(
             os.path.join(CACHE, "dgt_matriculaciones.json")), "matriculaciones"):
         ok(f"{len(datos['matriculaciones']['x'])} meses, ultimo {datos['matriculaciones']['x'][-1]}")
+
+    paso("NOAA GHCN-Daily - Malaga Aeropuerto desde 1942")
+    if bloque("clima_largo", clima_largo.temperatura_y_lluvia, "clima_largo"):
+        c = datos["clima_largo"]
+        ok(f"{c['anual']['x'][0]}-{c['anual']['x'][-1]}, ultimo dia {c['ultimo_dia']}")
+
+    paso("NOAA OISST - temperatura del mar frente a Marbella")
+    if bloque("mar", lambda: mar.temperatura_mar(os.path.join(CACHE, "sst_diaria.json")), "mar"):
+        ok(f"ultimo dia {datos['mar']['ultimo_dia']}: {datos['mar']['ultimo_valor']} C")
+
+    paso("PSMSL - nivel del mar en Malaga")
+    if bloque("nivel_mar", mar.nivel_mar, "nivel_mar"):
+        ok(f"{datos['nivel_mar']['desde']}-{datos['nivel_mar']['hasta']}, {datos['nivel_mar']['mm_anio']} mm/ano")
+
+    paso("NOAA GML - CO2 atmosferico")
+    if bloque("co2", clima_largo.co2, "co2"):
+        ok(f"ultimo {datos['co2']['x'][-1]}: {datos['co2']['v'][-1]} ppm")
+
+    paso("REE - generacion electrica en Andalucia")
+    if bloque("electricidad", energia.electricidad, "electricidad"):
+        ok(f"{len(datos['electricidad']['x'])} meses, ultimo {datos['electricidad']['x'][-1]}")
 
     paso("Punto de Acceso Nacional - puntos de recarga")
     bloque("recarga", lambda: dgt.recarga(observatorios.limite_municipal(),
