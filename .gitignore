@@ -1,4 +1,3 @@
 __pycache__/
 *.pyc
 .env
-pipeline/cache/sst_diaria.json

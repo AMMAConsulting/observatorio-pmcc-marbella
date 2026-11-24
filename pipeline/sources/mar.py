@@ -48,7 +48,7 @@ def _anio_sst(a, hasta):
     return out
 
 
-def temperatura_mar(ruta_cache):
+def temperatura_mar(ruta_cache, presupuesto_s=120):
     if not os.path.exists(ruta_cache):
         # La carga inicial (1982-hoy) se hace aparte: el servidor tarda varios
         # minutos por ano y no cabe en la Action diaria.
@@ -57,9 +57,9 @@ def temperatura_mar(ruta_cache):
     hoy = datetime.date.today()
     inicio = datetime.datetime.now()
     for a in range(1982, hoy.year + 1):
-        # Tope de 8 minutos por ejecucion: el servidor tarda mucho, y una carga
-        # inicial se completa en varias ejecuciones (cada una guarda lo bajado).
-        if (datetime.datetime.now() - inicio).total_seconds() > 480 and str(a) not in cache:
+        # Tope de tiempo por ejecucion: el servidor tarda minutos por ano. La
+        # carga inicial la hace la Action cargar-sst.yml en varias pasadas.
+        if (datetime.datetime.now() - inicio).total_seconds() > presupuesto_s and str(a) not in cache:
             break
         # Los anos cerrados se guardan; el en curso (y el anterior, por si hay
         # correcciones tardias de NOAA) se vuelven a pedir siempre.
