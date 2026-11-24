@@ -1,0 +1,422 @@
+{
+"2021-01": {
+"bev": 3,
+"phev": 5,
+"hev": 18,
+"combustion": 125
+},
+"2021-02": {
+"bev": 5,
+"phev": 4,
+"hev": 14,
+"combustion": 111
+},
+"2021-03": {
+"bev": 7,
+"phev": 10,
+"hev": 28,
+"combustion": 201
+},
+"2021-04": {
+"bev": 6,
+"phev": 6,
+"hev": 38,
+"combustion": 172
+},
+"2021-05": {
+"bev": 9,
+"phev": 7,
+"hev": 37,
+"combustion": 216
+},
+"2021-06": {
+"bev": 10,
+"phev": 10,
+"hev": 46,
+"combustion": 164
+},
+"2021-07": {
+"bev": 5,
+"phev": 9,
+"hev": 47,
+"combustion": 194
+},
+"2021-08": {
+"bev": 9,
+"phev": 9,
+"hev": 37,
+"combustion": 187
+},
+"2021-09": {
+"bev": 17,
+"phev": 2,
+"hev": 50,
+"combustion": 202
+},
+"2021-10": {
+"bev": 8,
+"phev": 10,
+"hev": 48,
+"combustion": 218
+},
+"2021-11": {
+"bev": 12,
+"phev": 15,
+"hev": 49,
+"combustion": 231
+},
+"2021-12": {
+"bev": 7,
+"phev": 5,
+"hev": 47,
+"combustion": 274
+},
+"2022-01": {
+"bev": 8,
+"phev": 5,
+"hev": 45,
+"combustion": 159
+},
+"2022-02": {
+"bev": 8,
+"phev": 10,
+"hev": 41,
+"combustion": 228
+},
+"2022-03": {
+"bev": 18,
+"phev": 8,
+"hev": 44,
+"combustion": 208
+},
+"2022-04": {
+"bev": 13,
+"phev": 8,
+"hev": 58,
+"combustion": 210
+},
+"2022-05": {
+"bev": 10,
+"phev": 11,
+"hev": 63,
+"combustion": 305
+},
+"2022-06": {
+"bev": 21,
+"phev": 16,
+"hev": 48,
+"combustion": 283
+},
+"2022-07": {
+"bev": 9,
+"phev": 10,
+"hev": 49,
+"combustion": 246
+},
+"2022-08": {
+"bev": 6,
+"phev": 8,
+"hev": 59,
+"combustion": 188
+},
+"2022-09": {
+"bev": 20,
+"phev": 11,
+"hev": 86,
+"combustion": 216
+},
+"2022-10": {
+"bev": 7,
+"phev": 11,
+"hev": 71,
+"combustion": 224
+},
+"2022-11": {
+"bev": 23,
+"phev": 8,
+"hev": 62,
+"combustion": 244
+},
+"2022-12": {
+"bev": 16,
+"phev": 11,
+"hev": 70,
+"combustion": 212
+},
+"2023-01": {
+"bev": 11,
+"phev": 9,
+"hev": 63,
+"combustion": 208
+},
+"2023-02": {
+"bev": 13,
+"phev": 10,
+"hev": 73,
+"combustion": 214
+},
+"2023-03": {
+"bev": 25,
+"phev": 23,
+"hev": 59,
+"combustion": 261
+},
+"2023-04": {
+"bev": 15,
+"phev": 15,
+"hev": 41,
+"combustion": 161
+},
+"2023-05": {
+"bev": 14,
+"phev": 9,
+"hev": 75,
+"combustion": 239
+},
+"2023-06": {
+"bev": 29,
+"phev": 25,
+"hev": 78,
+"combustion": 242
+},
+"2023-07": {
+"bev": 21,
+"phev": 21,
+"hev": 61,
+"combustion": 226
+},
+"2023-08": {
+"bev": 17,
+"phev": 17,
+"hev": 53,
+"combustion": 202
+},
+"2023-09": {
+"bev": 18,
+"phev": 7,
+"hev": 81,
+"combustion": 216
+},
+"2023-10": {
+"bev": 26,
+"phev": 18,
+"hev": 95,
+"combustion": 179
+},
+"2023-11": {
+"bev": 31,
+"phev": 17,
+"hev": 98,
+"combustion": 208
+},
+"2023-12": {
+"bev": 31,
+"phev": 7,
+"hev": 81,
+"combustion": 207
+},
+"2024-01": {
+"bev": 19,
+"phev": 16,
+"hev": 106,
+"combustion": 174
+},
+"2024-02": {
+"bev": 23,
+"phev": 13,
+"hev": 93,
+"combustion": 187
+},
+"2024-03": {
+"bev": 22,
+"phev": 14,
+"hev": 97,
+"combustion": 213
+},
+"2024-04": {
+"bev": 19,
+"phev": 9,
+"hev": 83,
+"combustion": 237
+},
+"2024-05": {
+"bev": 30,
+"phev": 24,
+"hev": 104,
+"combustion": 268
+},
+"2024-06": {
+"bev": 33,
+"phev": 9,
+"hev": 115,
+"combustion": 235
+},
+"2024-07": {
+"bev": 13,
+"phev": 18,
+"hev": 100,
+"combustion": 264
+},
+"2024-08": {
+"bev": 7,
+"phev": 8,
+"hev": 57,
+"combustion": 211
+},
+"2024-09": {
+"bev": 40,
+"phev": 14,
+"hev": 89,
+"combustion": 192
+},
+"2024-10": {
+"bev": 28,
+"phev": 15,
+"hev": 100,
+"combustion": 238
+},
+"2024-11": {
+"bev": 23,
+"phev": 13,
+"hev": 122,
+"combustion": 208
+},
+"2024-12": {
+"bev": 35,
+"phev": 12,
+"hev": 113,
+"combustion": 176
+},
+"2025-01": {
+"bev": 21,
+"phev": 22,
+"hev": 97,
+"combustion": 168
+},
+"2025-02": {
+"bev": 19,
+"phev": 18,
+"hev": 121,
+"combustion": 188
+},
+"2025-03": {
+"bev": 46,
+"phev": 21,
+"hev": 122,
+"combustion": 224
+},
+"2025-04": {
+"bev": 27,
+"phev": 27,
+"hev": 96,
+"combustion": 212
+},
+"2025-05": {
+"bev": 43,
+"phev": 31,
+"hev": 98,
+"combustion": 213
+},
+"2025-06": {
+"bev": 34,
+"phev": 37,
+"hev": 120,
+"combustion": 196
+},
+"2025-07": {
+"bev": 21,
+"phev": 32,
+"hev": 141,
+"combustion": 207
+},
+"2025-08": {
+"bev": 33,
+"phev": 20,
+"hev": 88,
+"combustion": 148
+},
+"2025-09": {
+"bev": 31,
+"phev": 36,
+"hev": 107,
+"combustion": 173
+},
+"2025-10": {
+"bev": 26,
+"phev": 36,
+"hev": 104,
+"combustion": 185
+},
+"2025-11": {
+"bev": 38,
+"phev": 38,
+"hev": 119,
+"combustion": 201
+},
+"2025-12": {
+"bev": 22,
+"phev": 36,
+"hev": 121,
+"combustion": 204
+},
+"2026-01": {
+"bev": 14,
+"phev": 41,
+"hev": 116,
+"combustion": 177
+},
+"2026-02": {
+"bev": 26,
+"phev": 35,
+"hev": 151,
+"combustion": 185
+},
+"2026-03": {
+"bev": 33,
+"phev": 46,
+"hev": 145,
+"combustion": 202
+},
+"2026-04": {
+"bev": 38,
+"phev": 26,
+"hev": 111,
+"combustion": 179
+},
+"2026-05": {
+"bev": 45,
+"phev": 39,
+"hev": 109,
+"combustion": 191
+},
+"2026-06": {
+"bev": 43,
+"phev": 33,
+"hev": 114,
+"combustion": 193
+},
+"2026-07": {
+"bev": 35,
+"phev": 37,
+"hev": 105,
+"combustion": 186
+},
+"2026-08": {
+"bev": 11,
+"phev": 35,
+"hev": 79,
+"combustion": 145
+},
+"2026-09": {
+"bev": 48,
+"phev": 41,
+"hev": 133,
+"combustion": 178
+},
+"2026-10": {
+"bev": 36,
+"phev": 39,
+"hev": 127,
+"combustion": 207
+}
+}
